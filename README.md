@@ -1,1 +1,0 @@
-# profile-company-artajaya-be

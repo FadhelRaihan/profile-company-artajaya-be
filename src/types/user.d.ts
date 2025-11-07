@@ -1,10 +1,9 @@
-export interface User {
-  id: number;
+export interface CreateUserDTO {
   name: string;
   email: string;
 }
 
-export interface CreateUserDto {
-  name: string;
-  email: string;
+export interface UpdateUserDTO {
+  name?: string;
+  email?: string;
 }
