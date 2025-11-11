@@ -1,36 +1,36 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-} from 'typeorm';
-import { Testimoni } from './Testimoni';
+} from "typeorm";
+import { Testimoni } from "./Testimoni";
 
-@Entity('users')
+@Entity("tb_users")
 export class User {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn("varchar", { length: 36 })
+  id: string | undefined;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: "varchar", length: 100, unique: true })
   email!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   password!: string;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: "boolean", default: true })
   is_active!: boolean;
 
   @OneToMany(() => Testimoni, (testimoni) => testimoni.createdByUser)
   testimonis!: Testimoni[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   created_at!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updated_at!: Date;
 }

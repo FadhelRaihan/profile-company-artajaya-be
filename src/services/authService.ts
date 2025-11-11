@@ -93,7 +93,7 @@ export class AuthService {
     };
   }
 
-  async getUserById(id: number) {
+  async getUserById(id: string) {
     const user = await this.userRepository.findOne({
       where: { id, is_active: true },
       select: ['id', 'name', 'email', 'created_at', 'updated_at'],

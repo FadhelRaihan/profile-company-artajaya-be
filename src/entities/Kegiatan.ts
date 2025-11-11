@@ -17,7 +17,7 @@ export class Kegiatan {
   id: string | undefined;
 
   @Column({ type: "varchar", length: 100 })
-  nama_kegiiatan: string | undefined;
+  nama_kegiatan: string | undefined;
 
   @Column({ type: "varchar", length: 225, unique: true })
   deskripsi_singkat: string | undefined;
@@ -36,7 +36,7 @@ export class Kegiatan {
   createdByUser!: User;
 
   @Column({ name: "created_by" })
-  created_by!: number;
+  created_by!: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date | undefined;

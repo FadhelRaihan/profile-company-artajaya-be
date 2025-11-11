@@ -9,7 +9,7 @@ import {
 } from "typeorm";
 import { User } from "./User";
 
-@Entity("testimoni")
+@Entity("tb_testimoni")
 export class Testimoni {
   @PrimaryColumn('varchar', { length: 36 })
   id: string | undefined;
@@ -28,7 +28,7 @@ export class Testimoni {
   createdByUser!: User;
 
   @Column({ name: "created_by" })
-  created_by!: number;
+  created_by!: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date | undefined;

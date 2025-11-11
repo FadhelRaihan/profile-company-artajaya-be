@@ -85,7 +85,7 @@ export class AuthController {
       console.log('🔥 GET /api/auth/profile - Getting profile...');
       const userId = req.user!.id;
 
-      const user = await authService.getUserById(userId);
+      const user = await authService.getUserById(String(userId));
 
       if (!user) {
         res.status(404).json({

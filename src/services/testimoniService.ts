@@ -40,7 +40,7 @@ export class TestimoniService {
 
   async createTestimoni(
     data: CreateTestimoniDTO, 
-    userId: number
+    userId: string
   ): Promise<Testimoni> {
     console.log('Service: Creating testimoni with data:', data);
     console.log('Service: Created by user ID:', userId);
@@ -67,7 +67,7 @@ export class TestimoniService {
   async updateTestimoni(
     id: string, 
     data: UpdateTestimoniDTO,
-    userId: number
+    userId: string
   ): Promise<Testimoni | null> {
     console.log(`Service: Updating testimoni ${id} with data:`, data);
 

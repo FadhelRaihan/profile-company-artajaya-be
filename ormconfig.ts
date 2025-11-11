@@ -2,6 +2,8 @@ import { DataSource } from 'typeorm';
 import dotenv from 'dotenv';
 import { User } from './src/entities/User'; // TAMBAHKAN IMPORT INI!
 import { Testimoni } from './src/entities/Testimoni'; // DAN INI JUGA!
+import { Kegiatan } from './src/entities/Kegiatan'; // DAN INI JUGA!
+import { PhotoKegiatan } from './src/entities/PhotoKegiatan'; // DAN INI JUGA!
 
 dotenv.config();
 
@@ -16,7 +18,7 @@ export default new DataSource({
   logging: true,
   
   // GANTI INI
-  entities: [User, Testimoni], // Import langsung entity-nya
+  entities: [User, Testimoni, Kegiatan, PhotoKegiatan], // Import langsung entity-nya
   
   // ATAU:
   // entities: ['src/entities/**/*.{ts,js}'],

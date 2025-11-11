@@ -30,8 +30,6 @@ export class TestimoniController {
 
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      // Karena ID sekarang UUID (string), parseInt tidak cocok
-      // Gunakan req.params.id langsung, tetapi validasi jika perlu
       const id = req.params.id;
       console.log(`🔥 GET /api/testimoni/${id}`);
 
@@ -84,7 +82,7 @@ export class TestimoniController {
         return;
       }
 
-      const userId = req.user!.id;
+      const userId = String(req.user!.id);
 
       // ✅ Generate UUID
       const uuid = uuidv4();
@@ -136,7 +134,7 @@ export class TestimoniController {
         return;
       }
 
-      const userId = req.user!.id;
+      const userId = String(req.user!.id);
 
       // ✅ Update bisa mengubah is_active untuk soft delete
       const testimoni = await testimoniService.updateTestimoni(

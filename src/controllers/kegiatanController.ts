@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { KegiatanService } from '../services/kegiatanService';
 import { v4 as uuidv4 } from 'uuid';
+import { deleteFile } from '../config/uploadConfig';
 
 const kegiatanService = new KegiatanService();
 
@@ -33,7 +34,6 @@ export class KegiatanController {
       const id = req.params.id;
       console.log(`🔥 GET /api/kegiatan/${id}`);
 
-      // Validasi dasar apakah ID adalah UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(id)) {
         res.status(400).json({
@@ -43,7 +43,7 @@ export class KegiatanController {
         return;
       }
 
-      const kegiatan = await kegiatanService.getKegiatanById(id); // Pastikan service menerima string
+      const kegiatan = await kegiatanService.getKegiatanById(id);
 
       if (!kegiatan) {
         res.status(404).json({
@@ -70,50 +70,84 @@ export class KegiatanController {
     try {
       console.log('🔥 POST /api/kegiatan - Creating kegiatan...');
       console.log('Request body:', req.body);
-      console.log('User:', req.user);
+      console.log('Files:', req.files);
 
-      const { nama_kegiatan, deskripsi_singkat, tanggal_kegiatan, lokasi_kegiatan, is_active, photos } = req.body;
+      const { 
+        nama_kegiatan, 
+        deskripsi_singkat, 
+        tanggal_kegiatan, 
+        lokasi_kegiatan 
+      } = req.body;
 
-      if (!nama_kegiatan || !deskripsi_singkat || !tanggal_kegiatan || !lokasi_kegiatan || !photos) {
+      // ✅ Validasi required fields
+      if (!nama_kegiatan || !deskripsi_singkat || !tanggal_kegiatan || !lokasi_kegiatan) {
+        // 🗑️ Hapus file yang sudah diupload jika validasi gagal
+        if (req.files && Array.isArray(req.files)) {
+          req.files.forEach(file => deleteFile(file.filename));
+        }
+        
         res.status(400).json({
           status: 'error',
-          message: 'data are required',
+          message: 'nama_kegiatan, deskripsi_singkat, tanggal_kegiatan, and lokasi_kegiatan are required',
+        });
+        return;
+      }
+
+      // ✅ Validasi minimal 1 foto wajib diupload
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+        res.status(400).json({
+          status: 'error',
+          message: 'At least 1 photo is required',
         });
         return;
       }
 
       const userId = req.user!.id;
+      const kegiatanUuid = uuidv4();
 
-      // ✅ Generate UUID
-      const uuid = uuidv4();
+      // 📸 Process uploaded photos
+      const photos = (req.files as Express.Multer.File[]).map((file) => ({
+        id: uuidv4(),
+        id_kegiatan: kegiatanUuid,
+        photo_name: file.filename,
+        url: `/uploads/kegiatan/${file.filename}`, // URL untuk akses file
+      }));
 
-      // ✅ Siapkan data dengan UUID
+      // ✅ Siapkan data kegiatan
       const kegiatanData = {
-        id: uuid, // Tambahkan UUID ke data
+        id: kegiatanUuid,
         nama_kegiatan,
         deskripsi_singkat,
-        tanggal_kegiatan,
+        tanggal_kegiatan: new Date(tanggal_kegiatan),
         lokasi_kegiatan,
-        is_active, 
+        is_active: true,
         photos,
+        created_by: userId,
       };
 
       const createdKegiatan = await kegiatanService.createKegiatan(
-        kegiatanData, // Kirim data yang sudah berisi UUID
+        kegiatanData,
         userId
       );
 
-      console.log('✅ Kegiatan created:', createdKegiatan);
+      console.log('✅ Kegiatan created with', photos.length, 'photos');
 
       res.status(201).json({
         status: 'success',
         data: createdKegiatan,
+        message: `Kegiatan created successfully with ${photos.length} photo(s)`,
       });
     } catch (error) {
       console.error('❌ Error in create:', error);
+
+      // 🗑️ Rollback: Hapus file yang sudah diupload jika ada error
+      if (req.files && Array.isArray(req.files)) {
+        req.files.forEach(file => deleteFile(file.filename));
+      }
+
       res.status(500).json({
         status: 'error',
-        message: 'Failed to create testimoni',
+        message: 'Failed to create kegiatan',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -123,11 +157,14 @@ export class KegiatanController {
     try {
       const id = req.params.id;
       console.log(`🔥 PUT /api/kegiatan/${id} - Updating...`);
-      console.log('Request body:', req.body);
 
-      // Validasi dasar apakah ID adalah UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(id)) {
+        // Hapus file jika validasi gagal
+        if (req.files && Array.isArray(req.files)) {
+          req.files.forEach(file => deleteFile(file.filename));
+        }
+
         res.status(400).json({
           status: 'error',
           message: 'Invalid kegiatan ID format',
@@ -137,14 +174,14 @@ export class KegiatanController {
 
       const userId = req.user!.id;
 
-      // ✅ Update bisa mengubah is_active untuk soft delete
-      const kegiatan = await kegiatanService.updateKegiatan(
-        id, // Gunakan ID string (UUID)
-        req.body, // bisa include is_active: false untuk soft delete
-        userId
-      );
+      // 🔍 Cek kegiatan existing (untuk hapus foto lama)
+      const existingKegiatan = await kegiatanService.getKegiatanById(id, false);
+      if (!existingKegiatan) {
+        // Hapus file baru jika kegiatan tidak ditemukan
+        if (req.files && Array.isArray(req.files)) {
+          req.files.forEach(file => deleteFile(file.filename));
+        }
 
-      if (!kegiatan) {
         res.status(404).json({
           status: 'error',
           message: 'Kegiatan not found',
@@ -152,29 +189,62 @@ export class KegiatanController {
         return;
       }
 
-      console.log('✅ Kegiatan updated:', kegiatan);
+      // 📸 Process new photos jika ada
+      let photos = undefined;
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        photos = (req.files as Express.Multer.File[]).map((file) => ({
+          id: uuidv4(),
+          id_kegiatan: id,
+          photo_name: file.filename,
+          url: `/uploads/kegiatan/${file.filename}`,
+        }));
+
+        // 🗑️ Hapus foto lama dari storage
+        if (existingKegiatan.photos) {
+          existingKegiatan.photos.forEach(photo => {
+            if (photo.photo_name) {
+              deleteFile(photo.photo_name);
+            }
+          });
+        }
+      }
+
+      // ✅ Update data
+      const updateData = {
+        ...req.body,
+        tanggal_kegiatan: req.body.tanggal_kegiatan 
+          ? new Date(req.body.tanggal_kegiatan) 
+          : undefined,
+        photos, // undefined jika tidak ada upload baru
+      };
+
+      const updatedKegiatan = await kegiatanService.updateKegiatan(
+        id,
+        updateData,
+        userId
+      );
+
+      console.log('✅ Kegiatan updated');
 
       res.status(200).json({
         status: 'success',
-        data: kegiatan,
-        message: req.body.is_active === false
-          ? 'Kegiatan deactivated successfully'
+        data: updatedKegiatan,
+        message: photos 
+          ? `Kegiatan updated with ${photos.length} new photo(s)`
           : 'Kegiatan updated successfully',
       });
     } catch (error) {
       console.error('❌ Error in update:', error);
 
-      if (error instanceof Error && error.message.includes('not authorized')) {
-        res.status(403).json({
-          status: 'error',
-          message: error.message,
-        });
-        return;
+      // 🗑️ Rollback: Hapus file baru jika ada error
+      if (req.files && Array.isArray(req.files)) {
+        req.files.forEach(file => deleteFile(file.filename));
       }
 
       res.status(500).json({
         status: 'error',
         message: 'Failed to update kegiatan',
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

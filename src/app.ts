@@ -2,6 +2,7 @@ import "reflect-metadata";
 import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from 'path';
 
 // Import routes
 import userRoutes from "./routes/userRoutes";
@@ -32,6 +33,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   console.log("==========================================\n");
   next();
 });
+
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, './uploads')));
 
 // Routes
 app.use("/api/users", userRoutes);

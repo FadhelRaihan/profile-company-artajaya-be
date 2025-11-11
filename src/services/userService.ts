@@ -17,7 +17,7 @@ export class UserService {
     return users;
   }
 
-  async getUserById(id: number): Promise<User | null> {
+  async getUserById(id: string): Promise<User | null> {
     console.log(`Service: Fetching user with ID ${id}...`);
     const user = await this.userRepository.findOne({
       where: { id },
@@ -43,7 +43,7 @@ export class UserService {
     }
   }
 
-  async updateUser(id: number, data: UpdateUserDTO): Promise<User | null> {
+  async updateUser(id: string, data: UpdateUserDTO): Promise<User | null> {
     console.log(`Service: Updating user ${id} with data:`, data);
     
     const user = await this.userRepository.findOne({ where: { id } });
@@ -58,12 +58,5 @@ export class UserService {
     console.log('Service: User updated:', updatedUser);
     
     return updatedUser;
-  }
-
-  async deleteUser(id: number): Promise<boolean> {
-    console.log(`Service: Deleting user ${id}...`);
-    const result = await this.userRepository.delete(id);
-    console.log('Service: Delete result:', result);
-    return result.affected! > 0;
   }
 }
