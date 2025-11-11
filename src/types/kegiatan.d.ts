@@ -14,6 +14,7 @@ export interface UpdateKegiatanDTO {
   lokasi_kegiatan: string;
   is_active: boolean;
   photos: PhotoData[];
+  removed_photos?: string[];
 }
 
 export interface PhotoData {

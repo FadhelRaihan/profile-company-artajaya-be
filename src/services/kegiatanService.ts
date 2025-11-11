@@ -6,6 +6,8 @@ import {
   UpdateKegiatanDTO,
   PhotoData,
 } from "../types/kegiatan";
+import { deleteFile } from "../config/uploadConfig";
+import { In } from "typeorm";
 
 export class KegiatanService {
   private get kegiatanRepository() {
@@ -61,7 +63,6 @@ export class KegiatanService {
     try {
       const newKegiatan = this.kegiatanRepository.create({
         ...data,
-        is_active: true, // Pastikan selalu aktif saat dibuat
       });
 
       // Map data foto ke entitas PhotoKegiatan
@@ -86,7 +87,6 @@ export class KegiatanService {
   ): Promise<Kegiatan | null> {
     console.log(`Service: Updating kegiatan ${id} with data:`, data);
 
-    // Ambil kegiatan tanpa filter is_active (bisa update yang sudah inactive)
     const existingKegiatan = await this.kegiatanRepository.findOneBy({ id });
 
     if (!existingKegiatan) {
@@ -94,22 +94,53 @@ export class KegiatanService {
     }
 
     try {
-      // 1. Update data Kegiatan (termasuk is_active jika ada di DTO)
-      Object.assign(existingKegiatan, data);
+      // 1. Logika Hapus Foto Lama (jika diminta)
+      if (data.removed_photos && data.removed_photos.length > 0) {
+        console.log(`Service: Deleting photos:`, data.removed_photos);
 
-      // 2. Logika Update Foto: Hapus semua foto lama jika ada data foto baru, lalu tambahkan yang baru
-      if (data.photos) {
-        // Menghapus entri foto lama (TypeORM akan menggunakan id_kegiatan)
-        await this.photoKegiatanRepository.delete({
-          kegiatan: existingKegiatan,
+        // Ambil data foto yang akan dihapus (untuk dapat nama filenya)
+        const photosToDelete = await this.photoKegiatanRepository.find({
+          where: {
+            id: In(data.removed_photos), // Gunakan 'In' untuk array ID
+            id_kegiatan: id, // Pastikan foto milik kegiatan ini
+          },
         });
 
-        // Tambahkan foto baru
-        existingKegiatan.photos = data.photos.map((photoData: PhotoData) =>
-          this.photoKegiatanRepository.create({ ...photoData, id_kegiatan: id })
-        );
+        // Hapus file dari storage
+        for (const photo of photosToDelete) {
+          if (photo.photo_name) {
+            deleteFile(photo.photo_name); // Hapus fisik file
+          }
+        }
+
+        // Hapus record dari database
+        await this.photoKegiatanRepository.delete({
+          id: In(data.removed_photos),
+        });
       }
 
+      // 2. Update data Kegiatan (teks, tanggal, dll)
+      const { photos: newPhotosData, removed_photos, ...kegiatanData } = data;
+      Object.assign(existingKegiatan, kegiatanData);
+
+      // 3. Logika Tambah Foto Baru (jika ada)
+      if (newPhotosData && newPhotosData.length > 0) {
+        console.log(`Service: Adding ${newPhotosData.length} new photos`);
+
+        const newPhotos = newPhotosData.map((photoData: PhotoData) =>
+          this.photoKegiatanRepository.create({ ...photoData, id_kegiatan: id })
+        );
+
+        // Jika belum ada array photos, buat dulu
+        if (!existingKegiatan.photos) {
+          existingKegiatan.photos = [];
+        }
+
+        // Tambahkan foto baru ke relasi
+        existingKegiatan.photos.push(...newPhotos);
+      }
+
+      // 4. Simpan semua perubahan
       return this.kegiatanRepository.save(existingKegiatan);
     } catch (error) {
       console.error("Service: Error update kegiatan:", error);
