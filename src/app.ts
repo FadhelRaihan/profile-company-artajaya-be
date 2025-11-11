@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes";
 import testimoniRoutes from "./routes/testimoniRoutes";
 import authRoutes from "./routes/authRoutes";
+import kegiatanRoutes from "./routes/kegiatanRoutes";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use("/api/users", userRoutes);
 app.use("/api/testimoni", testimoniRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/kegiatan", kegiatanRoutes);
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
