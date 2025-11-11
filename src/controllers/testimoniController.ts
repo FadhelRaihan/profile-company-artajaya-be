@@ -1,6 +1,6 @@
-// src/controllers/testimoniController.ts
 import { Request, Response } from 'express';
 import { TestimoniService } from '../services/testimoniService';
+import { v4 as uuidv4 } from 'uuid';
 
 const testimoniService = new TestimoniService();
 
@@ -8,11 +8,11 @@ export class TestimoniController {
   async getAll(req: Request, res: Response): Promise<void> {
     try {
       console.log('🔥 GET /api/testimoni - Fetching testimoni...');
-      
+
       // ✅ Query parameter untuk filter active/inactive
       const showAll = req.query.show_all === 'true';
       const testimoni = await testimoniService.getAllTestimoni(!showAll);
-      
+
       console.log('✅ Successfully fetched testimoni:', testimoni.length);
 
       res.status(200).json({
@@ -30,18 +30,22 @@ export class TestimoniController {
 
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      // Karena ID sekarang UUID (string), parseInt tidak cocok
+      // Gunakan req.params.id langsung, tetapi validasi jika perlu
+      const id = req.params.id;
       console.log(`🔥 GET /api/testimoni/${id}`);
 
-      if (isNaN(id)) {
+      // Validasi dasar apakah ID adalah UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
         res.status(400).json({
           status: 'error',
-          message: 'Invalid testimoni ID',
+          message: 'Invalid testimoni ID format',
         });
         return;
       }
 
-      const testimoni = await testimoniService.getTestimoniById(id);
+      const testimoni = await testimoniService.getTestimoniById(id); // Pastikan service menerima string
 
       if (!testimoni) {
         res.status(404).json({
@@ -81,20 +85,28 @@ export class TestimoniController {
       }
 
       const userId = req.user!.id;
-      const testimoniData = await testimoniService.createTestimoni(
-        {
-          nama_tester,
-          testimoni,
-          is_active, // ✅ Bisa set active/inactive saat create
-        },
+
+      // ✅ Generate UUID
+      const uuid = uuidv4();
+
+      // ✅ Siapkan data dengan UUID
+      const testimoniData = {
+        id: uuid, // Tambahkan UUID ke data
+        nama_tester,
+        testimoni,
+        is_active, // ✅ Bisa set active/inactive saat create
+      };
+
+      const createdTestimoni = await testimoniService.createTestimoni(
+        testimoniData, // Kirim data yang sudah berisi UUID
         userId
       );
 
-      console.log('✅ Testimoni created:', testimoniData);
+      console.log('✅ Testimoni created:', createdTestimoni);
 
       res.status(201).json({
         status: 'success',
-        data: testimoniData,
+        data: createdTestimoni,
       });
     } catch (error) {
       console.error('❌ Error in create:', error);
@@ -108,23 +120,27 @@ export class TestimoniController {
 
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      // Karena ID sekarang UUID (string), parseInt tidak cocok
+      // Gunakan req.params.id langsung, tetapi validasi jika perlu
+      const id = req.params.id;
       console.log(`🔥 PUT /api/testimoni/${id} - Updating...`);
       console.log('Request body:', req.body);
 
-      if (isNaN(id)) {
+      // Validasi dasar apakah ID adalah UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
         res.status(400).json({
           status: 'error',
-          message: 'Invalid testimoni ID',
+          message: 'Invalid testimoni ID format',
         });
         return;
       }
 
       const userId = req.user!.id;
-      
+
       // ✅ Update bisa mengubah is_active untuk soft delete
       const testimoni = await testimoniService.updateTestimoni(
-        id,
+        id, // Gunakan ID string (UUID)
         req.body, // bisa include is_active: false untuk soft delete
         userId
       );
@@ -142,8 +158,8 @@ export class TestimoniController {
       res.status(200).json({
         status: 'success',
         data: testimoni,
-        message: req.body.is_active === false 
-          ? 'Testimoni deactivated successfully' 
+        message: req.body.is_active === false
+          ? 'Testimoni deactivated successfully'
           : 'Testimoni updated successfully',
       });
     } catch (error) {

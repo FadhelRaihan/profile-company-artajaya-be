@@ -11,35 +11,35 @@ export class TestimoniService {
   // ✅ Get ALL (termasuk yang inactive) - bisa filter dari controller
   async getAllTestimoni(isActiveOnly: boolean = true): Promise<Testimoni[]> {
     console.log(`Service: Fetching ${isActiveOnly ? 'active' : 'all'} testimoni...`);
-    
+
     const whereCondition = isActiveOnly ? { is_active: true } : {};
-    
+
     const testimoni = await this.testimoniRepository.find({
       where: whereCondition,
-      order: { id: 'DESC' },
+      order: { id: 'DESC' }, 
       relations: ['createdByUser'],
     });
-    
+
     console.log(`Service: Found ${testimoni.length} testimoni`);
     return testimoni;
   }
 
   // ✅ Get by ID (bisa ambil yang inactive juga untuk update)
-  async getTestimoniById(id: number, isActiveOnly: boolean = true): Promise<Testimoni | null> {
+  async getTestimoniById(id: string, isActiveOnly: boolean = true): Promise<Testimoni | null> {
     console.log(`Service: Fetching testimoni with ID ${id}...`);
-    
-    const whereCondition = isActiveOnly ? { id, is_active: true } : { id };
-    
+
+    const whereCondition = isActiveOnly ? { id, is_active: true } : { id }; 
+
     const testimoni = await this.testimoniRepository.findOne({
       where: whereCondition,
       relations: ['createdByUser'],
     });
-    
+
     return testimoni;
   }
 
   async createTestimoni(
-    data: CreateTestimoniDTO,
+    data: CreateTestimoniDTO, 
     userId: number
   ): Promise<Testimoni> {
     console.log('Service: Creating testimoni with data:', data);
@@ -47,11 +47,10 @@ export class TestimoniService {
 
     try {
       const testimoni = this.testimoniRepository.create({
-        ...data,
+        ...data, 
         created_by: userId,
-        is_active: data.is_active !== undefined ? data.is_active : true, // default true
       });
-      
+
       console.log('Service: Testimoni entity created:', testimoni);
 
       const savedTestimoni = await this.testimoniRepository.save(testimoni);
@@ -66,7 +65,7 @@ export class TestimoniService {
 
   // ✅ Update bisa mengubah is_active untuk soft delete
   async updateTestimoni(
-    id: number,
+    id: string, 
     data: UpdateTestimoniDTO,
     userId: number
   ): Promise<Testimoni | null> {
@@ -74,7 +73,7 @@ export class TestimoniService {
 
     // Ambil testimoni tanpa filter is_active (bisa update yang sudah inactive)
     const testimoni = await this.testimoniRepository.findOne({
-      where: { id },
+      where: { id }, 
     });
 
     if (!testimoni) {
@@ -89,7 +88,7 @@ export class TestimoniService {
 
     // ✅ Update termasuk is_active (untuk soft delete)
     Object.assign(testimoni, data);
-    
+
     const updatedTestimoni = await this.testimoniRepository.save(testimoni);
     console.log('Service: Testimoni updated:', updatedTestimoni);
 

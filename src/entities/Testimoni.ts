@@ -1,18 +1,18 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  PrimaryColumn,
 } from "typeorm";
 import { User } from "./User";
 
 @Entity("testimoni")
 export class Testimoni {
-  @PrimaryGeneratedColumn()
-  id: number | undefined;
+  @PrimaryColumn('varchar', { length: 36 })
+  id: string | undefined;
 
   @Column({ type: "varchar", length: 100 })
   nama_tester: string | undefined;

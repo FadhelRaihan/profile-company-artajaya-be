@@ -1,4 +1,3 @@
-// src/migrations/1234567890123-CreateTestimoniTable.ts
 import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
 
 export class CreateTestimoniTable1234567890123 implements MigrationInterface {
@@ -10,10 +9,9 @@ export class CreateTestimoniTable1234567890123 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: 'varchar',
+            length: '36',
             isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
           },
           {
             name: 'nama_tester',

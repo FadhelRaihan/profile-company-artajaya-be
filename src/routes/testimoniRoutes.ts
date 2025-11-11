@@ -1,4 +1,3 @@
-// src/routes/testimoniRoutes.ts
 import { Router } from 'express';
 import { TestimoniController } from '../controllers/testimoniController';
 import { authMiddleware } from '../middlewares/auth.middleware';
