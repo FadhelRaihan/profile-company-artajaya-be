@@ -12,7 +12,7 @@ export class KegiatanController {
       console.log("🔥 GET /api/kegiatan - Fetching kegiatan...");
 
       // ✅ Query parameter untuk filter active/inactive
-      const showAll = req.query.show_all === "true";
+      const showAll = true;
       const kegiatan = await kegiatanService.getAllKegiatan(!showAll);
 
       console.log("✅ Successfully fetched kegiatan:", kegiatan.length);
@@ -116,8 +116,6 @@ export class KegiatanController {
 
       // 📸 Process uploaded photos
       const photos = (req.files as Express.Multer.File[]).map((file) => ({
-        id: uuidv4(),
-        id_kegiatan: kegiatanUuid,
         photo_name: file.filename,
         url: `/uploads/kegiatan/${file.filename}`, // URL untuk akses file
       }));
@@ -168,11 +166,15 @@ export class KegiatanController {
     try {
       const id = req.params.id;
       console.log(`🔥 PUT /api/kegiatan/${id} - Updating...`);
+      console.log("📦 Request body:", req.body);
+      console.log(
+        "📁 Uploaded files:",
+        req.files ? (req.files as any[]).length : 0
+      );
 
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(id)) {
-        // ... (penanganan error ID tidak valid, jangan lupa hapus file baru)
         if (req.files && Array.isArray(req.files)) {
           req.files.forEach((file) => deleteFile(file.filename));
         }
@@ -184,47 +186,108 @@ export class KegiatanController {
 
       const userId = req.user!.id;
 
-      // 📸 Proses foto BARU (jika ada)
-      let newPhotos: PhotoData[] | undefined = undefined;
-      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        newPhotos = (req.files as Express.Multer.File[]).map((file) => ({
-          id: uuidv4(), // ID baru untuk foto
-          id_kegiatan: id,
-          photo_name: file.filename,
-          url: `/uploads/kegiatan/${file.filename}`,
-        }));
+      // 🔍 Ambil kegiatan existing untuk mendapatkan foto lama
+      const existingKegiatan = await kegiatanService.getKegiatanById(id, false);
+      if (!existingKegiatan) {
+        if (req.files && Array.isArray(req.files)) {
+          req.files.forEach((file) => deleteFile(file.filename));
+        }
+        res
+          .status(404)
+          .json({ status: "error", message: "Kegiatan not found" });
+        return;
       }
 
-      // 📭 Ambil daftar FOTO LAMA YANG AKAN DIHAPUS
-      // Pastikan frontend mengirim ini sebagai array, misal: removed_photos[]
+      // 📸 Proses foto BARU (jika ada upload)
+      const newPhotos: PhotoData[] = [];
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        (req.files as Express.Multer.File[]).forEach((file) => {
+          newPhotos.push({
+            photo_name: file.filename,
+            url: `/uploads/kegiatan/${file.filename}`,
+          });
+        });
+      }
+
+      // 🗑️ Ambil daftar ID foto lama yang AKAN DIHAPUS dari request
       const { removed_photos } = req.body;
-      let removedPhotosIds: string[] | undefined = undefined;
+      let removedPhotoIds: string[] = [];
 
       if (typeof removed_photos === "string") {
-        removedPhotosIds = [removed_photos]; // Handle jika hanya 1
+        removedPhotoIds = [removed_photos];
       } else if (Array.isArray(removed_photos)) {
-        removedPhotosIds = removed_photos as string[]; // Handle jika array
+        removedPhotoIds = removed_photos as string[];
       }
 
-      console.log("🚮 Photos to remove:", removedPhotosIds);
+      console.log("🗑️ Photos marked for removal:", removedPhotoIds);
 
-      const updatePayload = { ...req.body };
+      // ✅ LOGIKA BARU: Hapus foto yang diminta, lalu tambahkan foto baru
+      let finalPhotos: PhotoData[] = [];
 
-      if (updatePayload.is_active !== undefined) {
-        updatePayload.is_active = updatePayload.is_active === "true";
-        console.log(
-          `Service: Status 'is_active' di-update ke: ${updatePayload.is_active}`
+      if (existingKegiatan.photos) {
+        // 1. Filter foto lama (buang yang ada di removedPhotoIds)
+        const remainingPhotos = existingKegiatan.photos.filter(
+          (photo) => !removedPhotoIds.includes(photo.id!)
         );
+
+        console.log(`📁 Keeping ${remainingPhotos.length} existing photos`);
+
+        // 2. Hapus file fisik dari foto yang dihapus
+        existingKegiatan.photos.forEach((photo) => {
+          if (removedPhotoIds.includes(photo.id!)) {
+            if (photo.photo_name) {
+              deleteFile(photo.photo_name);
+              console.log(`🗑️ Deleted file: ${photo.photo_name}`);
+            }
+          }
+        });
+
+        // 3. Gabungkan foto lama yang tersisa + foto baru
+        finalPhotos = [
+          ...remainingPhotos.map((photo) => ({
+            photo_name: photo.photo_name || "",
+            url: photo.url || "",
+          })),
+          ...newPhotos,
+        ];
+      } else {
+        // Jika tidak ada foto lama, gunakan foto baru saja
+        finalPhotos = newPhotos;
+      }
+
+      console.log(`📊 Final photo count: ${finalPhotos.length}`);
+
+      // ✅ Validasi: Minimal 1 foto harus ada
+      if (finalPhotos.length === 0) {
+        // Rollback: hapus foto baru yang sudah diupload
+        if (req.files && Array.isArray(req.files)) {
+          req.files.forEach((file) => deleteFile(file.filename));
+        }
+        res.status(400).json({
+          status: "error",
+          message:
+            "Kegiatan harus memiliki minimal 1 foto. Tidak bisa menghapus semua foto.",
+        });
+        return;
       }
 
       // ✅ Siapkan data update
+      const updatePayload = { ...req.body };
+
+      // Convert string 'true'/'false' ke boolean
+      if (updatePayload.is_active !== undefined) {
+        updatePayload.is_active = updatePayload.is_active === "true";
+      }
+
       const updateData: UpdateKegiatanDTO = {
-        ...updatePayload,
+        nama_kegiatan: updatePayload.nama_kegiatan,
+        deskripsi_singkat: updatePayload.deskripsi_singkat,
         tanggal_kegiatan: req.body.tanggal_kegiatan
           ? new Date(req.body.tanggal_kegiatan)
-          : undefined,
-        photos: newPhotos, // Kirim foto baru ke service
-        removed_photos: removedPhotosIds, // Kirim ID foto yang akan dihapus
+          : existingKegiatan.tanggal_kegiatan || new Date(),
+        lokasi_kegiatan: updatePayload.lokasi_kegiatan,
+        is_active: updatePayload.is_active ?? existingKegiatan.is_active,
+        photos: finalPhotos, // ✅ Kirim foto final (lama + baru - yang dihapus)
       };
 
       const updatedKegiatan = await kegiatanService.updateKegiatan(
@@ -233,20 +296,25 @@ export class KegiatanController {
         userId
       );
 
-      console.log("✅ Kegiatan updated");
+      console.log("✅ Kegiatan updated successfully");
 
       res.status(200).json({
         status: "success",
         data: updatedKegiatan,
-        message: "Kegiatan updated successfully",
+        message: `Kegiatan updated successfully. Total photos: ${finalPhotos.length}`,
       });
     } catch (error) {
-      // ... (penanganan error, jangan lupa hapus file baru jika gagal)
+      console.error("❌ Error in update:", error);
+
+      // Rollback: hapus file baru jika ada error
       if (req.files && Array.isArray(req.files)) {
         req.files.forEach((file) => deleteFile(file.filename));
       }
+
       res.status(500).json({
-        /* ... error response ... */
+        status: "error",
+        message: "Failed to update kegiatan",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }

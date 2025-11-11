@@ -87,61 +87,64 @@ export class KegiatanService {
   ): Promise<Kegiatan | null> {
     console.log(`Service: Updating kegiatan ${id} with data:`, data);
 
-    const existingKegiatan = await this.kegiatanRepository.findOneBy({ id });
+    // Ambil kegiatan existing
+    const existingKegiatan = await this.kegiatanRepository.findOne({
+      where: { id },
+      relations: ["photos"],
+    });
 
     if (!existingKegiatan) {
       throw new Error(`Kegiatan dengan ID ${id} tidak ditemukan.`);
     }
 
     try {
-      // 1. Logika Hapus Foto Lama (jika diminta)
-      if (data.removed_photos && data.removed_photos.length > 0) {
-        console.log(`Service: Deleting photos:`, data.removed_photos);
+      // 1. Update data teks kegiatan
+      if (data.nama_kegiatan)
+        existingKegiatan.nama_kegiatan = data.nama_kegiatan;
+      if (data.deskripsi_singkat)
+        existingKegiatan.deskripsi_singkat = data.deskripsi_singkat;
+      if (data.tanggal_kegiatan)
+        existingKegiatan.tanggal_kegiatan = data.tanggal_kegiatan;
+      if (data.lokasi_kegiatan)
+        existingKegiatan.lokasi_kegiatan = data.lokasi_kegiatan;
+      if (data.is_active !== undefined)
+        existingKegiatan.is_active = data.is_active;
 
-        // Ambil data foto yang akan dihapus (untuk dapat nama filenya)
-        const photosToDelete = await this.photoKegiatanRepository.find({
-          where: {
-            id: In(data.removed_photos), // Gunakan 'In' untuk array ID
-            id_kegiatan: id, // Pastikan foto milik kegiatan ini
-          },
-        });
-
-        // Hapus file dari storage
-        for (const photo of photosToDelete) {
-          if (photo.photo_name) {
-            deleteFile(photo.photo_name); // Hapus fisik file
-          }
-        }
-
-        // Hapus record dari database
-        await this.photoKegiatanRepository.delete({
-          id: In(data.removed_photos),
-        });
-      }
-
-      // 2. Update data Kegiatan (teks, tanggal, dll)
-      const { photos: newPhotosData, removed_photos, ...kegiatanData } = data;
-      Object.assign(existingKegiatan, kegiatanData);
-
-      // 3. Logika Tambah Foto Baru (jika ada)
-      if (newPhotosData && newPhotosData.length > 0) {
-        console.log(`Service: Adding ${newPhotosData.length} new photos`);
-
-        const newPhotos = newPhotosData.map((photoData: PhotoData) =>
-          this.photoKegiatanRepository.create({ ...photoData, id_kegiatan: id })
+      // 2. ✅ LOGIKA BARU: Update foto HANYA jika ada perubahan
+      if (data.photos && data.photos.length > 0) {
+        console.log(
+          `Service: Replacing all photos. New count: ${data.photos.length}`
         );
 
-        // Jika belum ada array photos, buat dulu
-        if (!existingKegiatan.photos) {
-          existingKegiatan.photos = [];
-        }
+        // Hapus SEMUA foto lama dari database (karena controller sudah handle file deletion)
+        await this.photoKegiatanRepository.delete({
+          kegiatan: { id: id } as any,
+        });
 
-        // Tambahkan foto baru ke relasi
-        existingKegiatan.photos.push(...newPhotos);
+        // Tambahkan foto baru (sudah gabungan foto lama + baru dari controller)
+        existingKegiatan.photos = data.photos.map((photoData: PhotoData) =>
+          this.photoKegiatanRepository.create({
+            id_kegiatan: id,
+            photo_name: photoData.photo_name,
+            url: photoData.url,
+          })
+        );
+      } else {
+        console.log("Service: No photo changes");
+        // Jika data.photos undefined/empty, TIDAK ubah foto (pertahankan yang lama)
       }
 
-      // 4. Simpan semua perubahan
-      return this.kegiatanRepository.save(existingKegiatan);
+      // 3. Save kegiatan
+      const savedKegiatan = await this.kegiatanRepository.save(
+        existingKegiatan
+      );
+      console.log(`✅ Service: Kegiatan ${id} updated successfully`);
+
+      // 4. Fetch ulang dengan relasi lengkap
+      return await this.kegiatanRepository.findOne({
+        where: { id },
+        relations: ["createdByUser", "photos"],
+      });
     } catch (error) {
       console.error("Service: Error update kegiatan:", error);
       throw error;
