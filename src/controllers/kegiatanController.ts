@@ -30,6 +30,49 @@ export class KegiatanController {
     }
   }
 
+  async getAllActive(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("🔥 GET /api/kegiatan/active - Fetching kegiatan...");
+
+      const kegiatan = await kegiatanService.getAllActiveKegiatan();
+
+      console.log("✅ Successfully fetched kegiatan:", kegiatan.length);
+
+      res.status(200).json({
+        status: "success",
+        data: kegiatan,
+      });
+    } catch (error) {
+      console.error("❌ Error in getAll:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch kegiatan",
+      });
+    }
+  }
+
+  async getAllinActive(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("🔥 GET /api/kegiatan/inactive - Fetching kegiatan...");
+
+      // ✅ Query parameter untuk filter active/inactive
+      const kegiatan = await kegiatanService.getAllInactiveKegiatan();
+
+      console.log("✅ Successfully fetched kegiatan:", kegiatan.length);
+
+      res.status(200).json({
+        status: "success",
+        data: kegiatan,
+      });
+    } catch (error) {
+      console.error("❌ Error in getAll:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch kegiatan",
+      });
+    }
+  }
+
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const id = req.params.id;
@@ -117,7 +160,7 @@ export class KegiatanController {
       // 📸 Process uploaded photos
       const photos = (req.files as Express.Multer.File[]).map((file) => ({
         photo_name: file.filename,
-        url: publicPhotoUrl("laporan", file.filename), // URL untuk akses file
+        url: publicPhotoUrl("kegiatan", file.filename), // URL untuk akses file
       }));
 
       const statusKegiatan = is_active === "false" ? false : true;

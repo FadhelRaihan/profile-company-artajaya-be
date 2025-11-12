@@ -36,6 +36,33 @@ export class KegiatanService {
     return kegiatan;
   }
 
+  async getAllInactiveKegiatan(): Promise<Kegiatan[]> {
+    console.log("Service: Fetching inactive kegiatan only...");
+
+    const kegiatan = await this.kegiatanRepository.find({
+      where: { is_active: false }, // ✅ Filter hanya yang inactive
+      order: { id: "DESC" },
+      relations: ["createdByUser", "photos"],
+    });
+
+    console.log(`Service: Found ${kegiatan.length} inactive kegiatan`);
+    return kegiatan;
+  }
+
+  // ✅ Method existing untuk ambil active (optional, untuk konsistensi)
+  async getAllActiveKegiatan(): Promise<Kegiatan[]> {
+    console.log("Service: Fetching active kegiatan only...");
+
+    const kegiatan = await this.kegiatanRepository.find({
+      where: { is_active: true }, // ✅ Filter hanya yang active
+      order: { id: "DESC" },
+      relations: ["createdByUser", "photos"],
+    });
+
+    console.log(`Service: Found ${kegiatan.length} active kegiatan`);
+    return kegiatan;
+  }
+
   // ✅ Get by ID (bisa ambil yang inactive juga untuk update)
   async getKegiatanById(
     id: string,
