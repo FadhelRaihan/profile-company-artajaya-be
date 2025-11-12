@@ -16,6 +16,6 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, Testimoni, Kegiatan, PhotoKegiatan], // ⬅️ PENTING: Array dengan import langsung, bukan string path
+  entities: [__dirname + '/../entities/**/*.{ts,js}'], // ⬅️ PENTING: Array dengan import langsung, bukan string path
   migrations: [__dirname + '/../migrations/**/*.{ts,js}'],
 });
