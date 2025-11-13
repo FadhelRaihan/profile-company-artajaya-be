@@ -10,6 +10,8 @@ const kegiatanController = new KegiatanController();
 router.use(authMiddleware);
 
 router.get("/", kegiatanController.getAll);
+router.get("/inactive", kegiatanController.getAllinActive);
+router.get("/active", kegiatanController.getAllActive);
 router.get("/:id", kegiatanController.getById);
 router.post(
   "/",
