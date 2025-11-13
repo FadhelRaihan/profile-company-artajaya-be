@@ -18,10 +18,10 @@ export default new DataSource({
   logging: true,
   
   // GANTI INI
-  entities: [User, Testimoni, Kegiatan, PhotoKegiatan], // Import langsung entity-nya
+  // entities: [User, Testimoni, Kegiatan, PhotoKegiatan], // Import langsung entity-nya
   
   // ATAU:
-  // entities: ['src/entities/**/*.{ts,js}'],
+  entities: ['src/entities/**/*.{ts,js}'],
   
   migrations: ['src/migrations/**/*.{ts,js}'],
   subscribers: ['src/subscribers/**/*.{ts,js}'],

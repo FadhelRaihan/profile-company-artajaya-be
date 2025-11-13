@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { KegiatanService } from "../services/kegiatanService";
 import { v4 as uuidv4 } from "uuid";
-import { deleteFile } from "../config/uploadConfig";
+import { deleteFile, publicPhotoUrl } from "../config/uploadConfig";
 import { PhotoData, UpdateKegiatanDTO } from "../types/kegiatan";
 
 const kegiatanService = new KegiatanService();
@@ -119,7 +119,7 @@ export class KegiatanController {
         id: uuidv4(),
         id_kegiatan: kegiatanUuid,
         photo_name: file.filename,
-        url: `/uploads/kegiatan/${file.filename}`, // URL untuk akses file
+        url: publicPhotoUrl("laporan", file.filename), // URL untuk akses file
       }));
 
       const statusKegiatan = is_active === "false" ? false : true;
