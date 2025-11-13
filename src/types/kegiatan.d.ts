@@ -18,6 +18,7 @@ export interface UpdateKegiatanDTO {
 }
 
 export interface PhotoData {
+  id?: string;
   photo_name: string;
   url: string;
 }
