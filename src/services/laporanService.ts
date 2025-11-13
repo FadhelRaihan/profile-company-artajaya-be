@@ -81,10 +81,9 @@ export class LaporanService {
    * - deskripsi_singkat otomatis diambil dari deskripsi_detail (dipotong 225 char)
    * - photos dibuat jika ada
    */
-  async createLaporan(
-    data: CreateLaporanDTO,
-    userId: string
-  ): Promise<Laporan & { detail?: DetailLaporan | null }> {
+  async createLaporan(data: CreateLaporanDTO, userId: string): Promise<Laporan & { detail?: DetailLaporan | null }> {
+    console.log("Service: Creating Laporan with data:", data);
+    console.log("Service: Created by user ID:", userId);
     return AppDataSource.transaction(async (trx) => {
       const laporanRepo = trx.getRepository(Laporan);
       const detailRepo = trx.getRepository(DetailLaporan);
@@ -94,7 +93,9 @@ export class LaporanService {
       const deskripsi_singkat =
         (data.deskripsi_singkat?.trim()?.slice(0, 225)) ??
         makeDeskripsiSingkat(data.deskripsi_detail);
+
       const newLaporan = laporanRepo.create({
+        id: data.id,
         nama_proyek: data.nama_proyek,
         deskripsi_singkat,
         is_active: data.is_active ?? true,
