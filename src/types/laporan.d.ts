@@ -1,4 +1,5 @@
 export interface CreateLaporanDTO {
+  id: string;
   nama_proyek: string;
   deskripsi_singkat?: string;
   lokasi: string;

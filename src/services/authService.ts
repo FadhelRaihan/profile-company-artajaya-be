@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from "uuid";
 
 interface RegisterDTO {
   name: string;
@@ -40,6 +41,7 @@ export class AuthService {
       name: data.name,
       email: data.email,
       password: hashedPassword,
+      id: uuidv4(),
     });
 
     const savedUser = await this.userRepository.save(user);

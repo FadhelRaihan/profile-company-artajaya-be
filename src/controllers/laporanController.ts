@@ -119,18 +119,21 @@ export class LaporanController {
       // }
 
       const userId = String(req.user!.id);
+      const laporanUuid = uuidv4();
 
       // 📸 Mapping photos dari upload
       let photos: PhotoData[] = [];
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
         photos = (req.files as Express.Multer.File[]).map((file) => ({
-          // id di-generate otomatis di entity PhotoLaporan (BeforeInsert)
+          id: uuidv4(),
           photo_name: file.filename,
+          id_laporan: laporanUuid,
           url: publicPhotoUrl("laporan", file.filename),
         }));
       }
 
       const payload = {
+        id: laporanUuid,
         nama_proyek,
         // deskripsi_singkat: deskripsi_singkat, // akan diabaikan oleh service
         deskripsi_detail,
