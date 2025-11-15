@@ -10,6 +10,7 @@ import testimoniRoutes from "./routes/testimoniRoutes";
 import authRoutes from "./routes/authRoutes";
 import kegiatanRoutes from "./routes/kegiatanRoutes";
 import laporanRoutes from "./routes/laporanRoutes";
+import jabatanRoutes from "./routes/jabatanRoutes";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use("/api/testimoni", testimoniRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/kegiatan", kegiatanRoutes);
 app.use("/api/laporan", laporanRoutes);
+app.use("/api/jabatan", jabatanRoutes);
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
