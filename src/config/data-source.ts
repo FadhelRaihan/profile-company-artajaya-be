@@ -1,9 +1,5 @@
 import { DataSource } from 'typeorm';
 import dotenv from 'dotenv';
-import { User } from '../entities/User'; // IMPORT ENTITY LANGSUNG
-import { Testimoni } from '../entities/Testimoni';
-import { Kegiatan } from '../entities/Kegiatan'; // DAN INI JUGA!
-import { PhotoKegiatan } from '../entities/PhotoKegiatan'; // DAN INI JUGA!
 
 dotenv.config();
 
