@@ -15,10 +15,12 @@ function ensureDir(dir: string) {
 const dirs = {
   kegiatan: path.join(baseUploadDir, "kegiatan"),
   laporan: path.join(baseUploadDir, "laporan"),
+  karyawan: path.join(baseUploadDir, "karyawan"),
 };
 ensureDir(baseUploadDir);
 ensureDir(dirs.kegiatan);
 ensureDir(dirs.laporan);
+ensureDir(dirs.karyawan);
 
 // 🔧 Factory storage per subfolder
 function storageFactory(subdir: keyof typeof dirs) {
@@ -59,6 +61,12 @@ export const uploadLaporan = multer({
   limits: { fileSize: 3 * 1024 * 1024, files: 10 },
 });
 
+export const uploadKaryawan = multer({
+  storage: storageFactory("karyawan"),
+  fileFilter,
+  limits: { fileSize: 3 * 1024 * 1024, files: 1 },
+});
+
 // 🗑️ Helpers delete file
 export const deleteFileKegiatan = (filename: string): void => {
   const filePath = path.join(dirs.kegiatan, filename);
@@ -76,11 +84,19 @@ export const deleteFileLaporan = (filename: string): void => {
   }
 };
 
+export const deleteFileKaryawan = (filename: string): void => {
+  const filePath = path.join(dirs.karyawan, filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    console.log(`🗑️ Deleted karyawan file: ${filename}`);
+  }
+};
+
 // 🔙 Backward-compat: alias lama (mengarah ke kegiatan)
 export const deleteFile = deleteFileKegiatan;
 
 // 🌐 Optional helper bikin URL publik
 export const publicPhotoUrl = (
-  type: "kegiatan" | "laporan",
+  type: "kegiatan" | "laporan" | "karyawan",
   filename: string
 ) => `/uploads/${type}/${filename}`;

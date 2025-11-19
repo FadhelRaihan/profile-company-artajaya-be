@@ -9,6 +9,7 @@ import {
   OneToMany,
 } from "typeorm";
 import { User } from "./User";
+import { Karyawan } from "./Karyawan";
 
 @Entity("tb_jabatan")
 export class Jabatan {
@@ -37,9 +38,6 @@ export class Jabatan {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date | undefined;
 
-//   @OneToMany(() => PhotoKegiatan, (photo) => photo.kegiatan, {
-//     cascade: ["insert", "update"],
-//     onDelete: "CASCADE",
-//   })
-//   photos: PhotoKegiatan[] | undefined;
+  @OneToMany(() => Karyawan, (karyawan) => karyawan.jabatan)
+  karyawan: Karyawan[] | undefined;
 }

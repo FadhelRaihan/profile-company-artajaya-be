@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes";
 import kegiatanRoutes from "./routes/kegiatanRoutes";
 import laporanRoutes from "./routes/laporanRoutes";
 import jabatanRoutes from "./routes/jabatanRoutes";
+import karyawanRoutes from "./routes/karyawanRoutes";
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/kegiatan", kegiatanRoutes);
 app.use("/api/laporan", laporanRoutes);
 app.use("/api/jabatan", jabatanRoutes);
+app.use("/api/karyawan", karyawanRoutes);
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
